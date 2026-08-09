@@ -40,6 +40,31 @@ c, _ := cachex.New(cachex.WithTraceHook(txcachex.NewHook(m)))
 
 GetOrSet 实际回源时自动生成 cachex.load span，命中缓存不埋点。
 
+## resiliencex（熔断执行）
+
+```go
+import txresiliencex "github.com/lcylpzls/tracex/adapters/resiliencex"
+
+cb, _ := resiliencex.NewCircuitBreaker(resiliencex.WithTraceHook(txresiliencex.NewHook(m)))
+err := cb.ExecuteContext(ctx, func(ctx context.Context) error { ... })
+```
+
+成功/失败/熔断拒绝三路记录 span。
+
+## updatex（自更新）
+
+```go
+import txupdatex "github.com/lcylpzls/tracex/adapters/updatex"
+
+u, _ := updatex.New(updatex.Config{
+	Source:          src,
+	CurrentVersion:  "v1.0.0",
+	TraceHook:       txupdatex.NewHook(m),
+})
+```
+
+Check / Apply 自动生成 updatex.* span。
+
 ## httpx（出站请求）
 
 ```go

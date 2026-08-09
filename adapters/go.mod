@@ -7,7 +7,9 @@ require (
 	github.com/lcylpzls/dbx v0.2.4
 	github.com/lcylpzls/jobx v1.0.4
 	github.com/lcylpzls/logx v1.0.1
+	github.com/lcylpzls/resiliencex v1.0.3
 	github.com/lcylpzls/tracex v0.8.0
+	github.com/lcylpzls/updatex v0.5.0
 	github.com/lcylpzls/webx v1.2.4
 	go.opentelemetry.io/otel v1.45.0
 	go.opentelemetry.io/otel/trace v1.45.0
@@ -23,6 +25,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0 // indirect
 	github.com/lcylpzls/confx v0.3.1 // indirect
 	github.com/lcylpzls/errx v1.3.2 // indirect
+	github.com/lcylpzls/httpx v1.0.2 // indirect
 	github.com/magiconair/properties v1.18.11 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
 	github.com/quic-go/quic-go v0.61.0 // indirect

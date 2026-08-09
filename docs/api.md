@@ -100,6 +100,9 @@ s.UseGlobalMiddleware(txwebx.Middleware(m)) // m 为 *tracex.Manager
 - dbx：`txdbx.NewHook(m)` + `dbx.WithTraceHook`；
 - jobx：`txjobx.NewHook(m)` + `jobx.WithTraceHook`；
 - cachex：`txcachex.NewHook(m)` + `cachex.WithTraceHook`；
+- resiliencex：`txresiliencex.NewHook(m)` +
+  `resiliencex.WithTraceHook`（配合 ExecuteContext）；
+- updatex：`txupdatex.NewHook(m)` + `updatex.Config.TraceHook`；
 - httpx：`httpx.WithRoundTripperWrapper(m.RoundTripper)`。
 
 各库的 TraceHook 为零依赖最小接口，tracex 仅通过适配器接入。

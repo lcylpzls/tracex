@@ -1,5 +1,20 @@
 # 更新日志
 
+## [v0.12.0] - 2026-08-10
+
+### 家族插拔（续）
+
+- adapters 新增 resiliencex / updatex 追踪钩子适配；配合家族同步
+  发版：
+  - resiliencex v1.0.3：熔断执行埋点（ExecuteContext）；
+  - updatex v0.5.0：Check/Apply 埋点；
+- 适配器集成文档补全（现覆盖 webx/dbx/jobx/cachex/resiliencex/
+  updatex/httpx）。
+
+### 质量
+
+- 全部 6 个适配器语句覆盖率 100%；race / vet / staticcheck 全绿。
+
 ## [v0.11.0] - 2026-08-10
 
 ### 家族插拔
