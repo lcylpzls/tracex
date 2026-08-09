@@ -1,5 +1,18 @@
 # 更新日志
 
+## [v0.3.0] - 2026-08-10
+
+### 新增
+
+- 路由级 span 命名：`Config.RouteNamer` 支持框架适配注入
+  路由模板（如 `/users/{id}`）；
+- 慢请求标记：`Config.SlowThreshold` 超时后记录 `slow` 事件与
+  耗时属性。
+
+### 质量
+
+- 语句覆盖率保持 100%；race / vet / staticcheck 全绿。
+
 ## [v0.2.0] - 2026-08-10
 
 ### 新增

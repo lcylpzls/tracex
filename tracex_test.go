@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/lcylpzls/errx"
 	"github.com/lcylpzls/logx"
@@ -237,6 +238,86 @@ func TestMiddleware(t *testing.T) {
 	if errSpan.StatusCode != "Error" || errSpan.StatusMessage != "HTTP 500" {
 		t.Fatalf("错误 Span 状态不符：%+v", errSpan)
 	}
+}
+
+// TestMiddlewareRouteNaming 覆盖 ServeMux 路由模板命名。
+func TestMiddlewareRouteNaming(t *testing.T) {
+	m, err := New(Config{
+		ServiceName: "svc",
+		Exporter:    ExporterMemory,
+		RouteNamer: func(r *http.Request) string {
+			return "/users/{id}"
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	handler := m.Middleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNoContent)
+	}))
+	handler.ServeHTTP(httptest.NewRecorder(),
+		httptest.NewRequest(http.MethodGet, "http://example.com/users/42", nil))
+	_ = m.Shutdown(context.Background())
+
+	found := false
+	for _, s := range m.Spans() {
+		if s.Name == "GET /users/{id}" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("未使用路由模板命名：%+v", m.Spans())
+	}
+
+	// RouteNamer 返回空串时保持默认命名。
+	m2, err := New(Config{
+		ServiceName: "svc",
+		Exporter:    ExporterMemory,
+		RouteNamer:  func(*http.Request) string { return "" },
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	h2 := m2.Middleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {}))
+	h2.ServeHTTP(httptest.NewRecorder(),
+		httptest.NewRequest(http.MethodGet, "http://example.com/plain", nil))
+	_ = m2.Shutdown(context.Background())
+	for _, s := range m2.Spans() {
+		if s.Name == "/plain" {
+			return
+		}
+	}
+	t.Fatalf("空路由名应保持默认命名：%+v", m2.Spans())
+}
+
+// TestMiddlewareSlow 覆盖慢请求标记。
+func TestMiddlewareSlow(t *testing.T) {
+	m, err := New(Config{ServiceName: "svc", Exporter: ExporterMemory, SlowThreshold: time.Nanosecond})
+	if err != nil {
+		t.Fatal(err)
+	}
+	handler := m.Middleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		time.Sleep(5 * time.Millisecond)
+		w.WriteHeader(http.StatusOK)
+	}))
+	handler.ServeHTTP(httptest.NewRecorder(),
+		httptest.NewRequest(http.MethodGet, "http://example.com/slow", nil))
+	_ = m.Shutdown(context.Background())
+
+	for _, s := range m.Spans() {
+		if s.Name == "/slow" {
+			if s.Attributes["request.duration_ms"] == "" {
+				t.Fatalf("慢请求应记录耗时属性：%+v", s.Attributes)
+			}
+			for _, ev := range s.Events {
+				if ev.Name == "slow" {
+					return
+				}
+			}
+			t.Fatalf("慢请求应记录 slow 事件：%+v", s.Events)
+		}
+	}
+	t.Fatal("未找到慢请求 span")
 }
 
 // TestMiddlewarePropagation 覆盖入站链路上下文透传。

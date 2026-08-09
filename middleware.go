@@ -3,6 +3,7 @@ package tracex
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -25,9 +26,23 @@ func (m *Manager) Middleware(next http.Handler) http.Handler {
 			),
 		)
 		defer span.End()
+		start := time.Now()
 		rw := &statusWriter{ResponseWriter: w, status: http.StatusOK}
 		next.ServeHTTP(rw, r.WithContext(ctx))
 		span.SetAttributes(attribute.Int("http.response.status_code", rw.status))
+		// 路由级命名：框架适配通过 RouteNamer 提供路由模板。
+		if m.cfg.RouteNamer != nil {
+			if route := m.cfg.RouteNamer(r); route != "" {
+				span.SetName(r.Method + " " + route)
+			}
+		}
+		elapsed := time.Since(start)
+		if m.cfg.SlowThreshold > 0 && elapsed > m.cfg.SlowThreshold {
+			span.SetAttributes(attribute.Int64("request.duration_ms", elapsed.Milliseconds()))
+			span.AddEvent("slow", trace.WithAttributes(
+				attribute.Int64("elapsed_ms", elapsed.Milliseconds()),
+			))
+		}
 		if rw.status >= http.StatusInternalServerError {
 			span.SetStatus(codes.Error, fmt.Sprintf("HTTP %d", rw.status))
 		}

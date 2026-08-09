@@ -22,9 +22,10 @@
 
 ## v0.3.0 — 可观测增强
 
-- 请求路由级 span 命名（method + 路由模板）；
-- 慢请求/错误采样标记；
-- 日志与 span 关联（logx 钩子写入 span event）。
+- 路由级 span 命名（RouteNamer）；
+- 慢请求标记（SlowThreshold + slow 事件）。
+
+> 状态：**已发布**（v0.3.0，2026-08-10）。
 
 ## v0.4.0 — 健壮性打磨
 

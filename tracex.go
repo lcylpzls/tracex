@@ -5,6 +5,7 @@ package tracex
 import (
 	"context"
 	"io"
+	"net/http"
 	"os"
 	"sync"
 	"time"
@@ -66,6 +67,11 @@ type Config struct {
 	OTLPInsecure bool
 	// OTLPHeaders OTLP/HTTP 附加请求头。
 	OTLPHeaders map[string]string
+	// SlowThreshold 慢请求阈值；超过时记录 slow 事件，0 关闭。
+	SlowThreshold time.Duration
+	// RouteNamer 可选：从请求中提取路由模板（如 /users/{id}）用于
+	// span 命名；返回空串时保持默认命名。
+	RouteNamer func(r *http.Request) string
 }
 
 // Manager 追踪管理器：持有 TracerProvider、导出器与传播器。
