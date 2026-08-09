@@ -1,5 +1,19 @@
 # 更新日志
 
+## [v0.8.0] - 2026-08-10
+
+### 新增
+
+- `RecordError` 错误记录（异常事件 + Error 状态）；
+- `LogHook` logx 日志钩子：日志写入当前 span 的 log 事件，
+  实现日志与链路事件关联；
+- 可运行示例 `examples/demo`（stdout + 中间件 + 出站注入 + 钩子）；
+- 基准测试（中间件 ~1.8µs/op、出站注入含 HTTP 往返）接入 CI bench。
+
+### 质量
+
+- 语句覆盖率保持 100%；race / vet / staticcheck / fuzz 全绿。
+
 ## [v0.7.0] - 2026-08-10
 
 ### 终轮

@@ -53,6 +53,10 @@ func LogFields(ctx context.Context) logx.FieldGroup
 func WithBaggage(ctx context.Context, key, value string) context.Context
 func BaggageValue(ctx context.Context, key string) string
 func AddSpanEvent(ctx context.Context, name string, attrs ...attribute.KeyValue)
+func RecordError(ctx context.Context, err error)
+
+type LogHook struct{}
+func NewLogHook() *LogHook // 注册到 logx.HookedLogger.AddHook
 ```
 
 ## 5. 内存导出器

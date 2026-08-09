@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -14,4 +15,17 @@ func AddSpanEvent(ctx context.Context, name string, attrs ...attribute.KeyValue)
 		return
 	}
 	span.AddEvent(name, trace.WithAttributes(attrs...))
+}
+
+// RecordError 将错误记录到当前 span：记录异常事件并标记 Error 状态。
+func RecordError(ctx context.Context, err error) {
+	if err == nil {
+		return
+	}
+	span := trace.SpanFromContext(ctx)
+	if !span.IsRecording() {
+		return
+	}
+	span.RecordError(err)
+	span.SetStatus(codes.Error, err.Error())
 }
