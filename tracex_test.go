@@ -14,6 +14,7 @@ import (
 
 	"github.com/lcylpzls/errx"
 	"github.com/lcylpzls/logx"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
@@ -95,6 +96,35 @@ func TestSampler(t *testing.T) {
 	if len(m.Spans()) != 0 {
 		t.Fatal("NeverSample 不应导出任何 span")
 	}
+}
+
+// TestSetGlobal 覆盖注册 OTel 全局组件。
+func TestSetGlobal(t *testing.T) {
+	prevProvider := otel.GetTracerProvider()
+	prevProp := otel.GetTextMapPropagator()
+	defer func() {
+		otel.SetTracerProvider(prevProvider)
+		otel.SetTextMapPropagator(prevProp)
+	}()
+	m, err := New(Config{
+		ServiceName: "svc",
+		Exporter:    ExporterMemory,
+		SetGlobal:   true,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if otel.GetTracerProvider() == prevProvider {
+		t.Fatal("全局 TracerProvider 未被替换")
+	}
+	ctx, span := m.Start(context.Background(), "global")
+	carrier := propagation.HeaderCarrier(http.Header{})
+	otel.GetTextMapPropagator().Inject(ctx, carrier)
+	span.End()
+	if carrier.Get("traceparent") == "" {
+		t.Fatal("全局传播器应能注入 traceparent")
+	}
+	_ = m.Shutdown(context.Background())
 }
 
 // TestConcurrentRequests 覆盖并发安全（race 检测）。

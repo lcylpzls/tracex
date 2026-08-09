@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/lcylpzls/errx"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/exporters/stdout/stdouttrace"
@@ -76,6 +77,8 @@ type Config struct {
 	RouteNamer func(r *http.Request) string
 	// Sampler 可选采样器；nil 使用 TraceIDRatioBased(SampleRatio)。
 	Sampler sdktrace.Sampler
+	// SetGlobal 是否注册为 OTel 全局 TracerProvider 与传播器。
+	SetGlobal bool
 }
 
 // Manager 追踪管理器：持有 TracerProvider、导出器与传播器。
@@ -130,6 +133,10 @@ func New(cfg Config) (*Manager, error) {
 		propagation.TraceContext{},
 		propagation.Baggage{},
 	)
+	if cfg.SetGlobal {
+		otel.SetTracerProvider(provider)
+		otel.SetTextMapPropagator(propagator)
+	}
 	m := &Manager{
 		cfg:        cfg,
 		provider:   provider,

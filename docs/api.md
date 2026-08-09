@@ -20,6 +20,7 @@ type Config struct {
 	SlowThreshold time.Duration    // 慢请求阈值（0=关闭）
 	RouteNamer   func(*http.Request) string // 路由模板提取（可选）
 	Sampler      sdktrace.Sampler  // 采样器（nil=采样率）
+	SetGlobal    bool              // 注册为 OTel 全局组件
 }
 ```
 
