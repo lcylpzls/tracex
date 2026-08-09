@@ -63,6 +63,16 @@ jobs:
       - name: Run tests
         run: go test -v -race ./...
 
+      - name: Cross-build
+        run: |
+          foreach ($pair in @(@('linux','amd64'), @('linux','arm64'), @('windows','amd64'), @('windows','arm64'), @('darwin','amd64'), @('darwin','arm64'))) {
+            $env:GOOS = $pair[0]
+            $env:GOARCH = $pair[1]
+            go build ./...
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+        shell: pwsh
+
       - name: Create Release
         uses: softprops/action-gh-release@v3
         with:
