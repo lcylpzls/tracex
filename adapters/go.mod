@@ -3,6 +3,9 @@ module github.com/lcylpzls/tracex/adapters
 go 1.26.5
 
 require (
+	github.com/lcylpzls/cachex v1.0.3
+	github.com/lcylpzls/dbx v0.2.4
+	github.com/lcylpzls/jobx v1.0.4
 	github.com/lcylpzls/logx v1.0.1
 	github.com/lcylpzls/tracex v0.8.0
 	github.com/lcylpzls/webx v1.2.4

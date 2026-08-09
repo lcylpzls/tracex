@@ -3,7 +3,7 @@
 OpenTelemetry 链路追踪基座：统一 TracerProvider 管理、HTTP 中间件、
 logx 日志字段与内存导出器，与 errx / logx 家族生态打通。
 
-> 当前状态：**v0.10.0（v1 候选）**。
+> 当前状态：**v0.11.0（家族插拔）**。
 
 ## 特性
 
@@ -14,6 +14,7 @@ logx 日志字段与内存导出器，与 errx / logx 家族生态打通。
 - 路由级 span 命名与慢请求标记；
 - 日志钩子写入 span 事件、错误记录；
 - webx 框架中间件适配（adapters 子模块）；
+- dbx/jobx/cachex 追踪钩子适配 + httpx 传输层插拔；
 - `LogFields(ctx)` 一键输出 logx trace_id/span_id 字段；
 - 内存导出器（测试/调试友好，零外部依赖）；
 - 统一 errx 错误码；简体中文注释与日志。

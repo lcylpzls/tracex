@@ -1,5 +1,21 @@
 # 更新日志
 
+## [v0.11.0] - 2026-08-10
+
+### 家族插拔
+
+- adapters 新增 dbx / jobx / cachex 追踪钩子适配（零核心依赖，
+  保持 tracex 核心薄）；配合家族同步发版：
+  - dbx v0.2.4：Exec/Query/QueryRow 埋点；
+  - jobx v1.0.4：任务执行埋点；
+  - cachex v1.0.3：回源加载埋点；
+  - httpx v1.0.4：`WithRoundTripperWrapper` 传输层插拔；
+- 适配器集成文档（webx/dbx/jobx/cachex/httpx 用法）。
+
+### 质量
+
+- 全部适配器语句覆盖率 100%；race / vet / staticcheck 全绿。
+
 ## [v0.10.0] - 2026-08-10
 
 ### 终轮

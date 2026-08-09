@@ -94,3 +94,12 @@ s.UseGlobalMiddleware(txwebx.Middleware(m)) // m 为 *tracex.Manager
 
 行为与标准中间件一致：链路提取/创建、路由级命名、状态码、
 5xx 错误标记与慢请求事件。
+
+## 8. 家族插拔（adapters 子模块）
+
+- dbx：`txdbx.NewHook(m)` + `dbx.WithTraceHook`；
+- jobx：`txjobx.NewHook(m)` + `jobx.WithTraceHook`；
+- cachex：`txcachex.NewHook(m)` + `cachex.WithTraceHook`；
+- httpx：`httpx.WithRoundTripperWrapper(m.RoundTripper)`。
+
+各库的 TraceHook 为零依赖最小接口，tracex 仅通过适配器接入。
