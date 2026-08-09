@@ -1,0 +1,312 @@
+package tracex
+
+import (
+	"bytes"
+	"context"
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"strings"
+	"testing"
+
+	"github.com/lcylpzls/errx"
+	"github.com/lcylpzls/logx"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
+	"go.opentelemetry.io/otel/propagation"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	"go.opentelemetry.io/otel/trace"
+)
+
+// TestNewValidation 覆盖构造校验。
+func TestNewValidation(t *testing.T) {
+	cases := []struct {
+		name string
+		cfg  Config
+	}{
+		{"空服务名", Config{}},
+		{"负采样率", Config{ServiceName: "s", SampleRatio: -0.1}},
+		{"超采样率", Config{ServiceName: "s", SampleRatio: 1.1}},
+		{"未知导出器", Config{ServiceName: "s", Exporter: "unknown"}},
+		{"OTLP 缺端点", Config{ServiceName: "s", Exporter: ExporterOTLPHTTP}},
+	}
+	for _, tc := range cases {
+		if _, err := New(tc.cfg); !errx.Is(err, CodeInvalidConfig) {
+			t.Fatalf("%s 应报配置错误，实际：%v", tc.name, err)
+		}
+	}
+}
+
+// TestExporterFailures 覆盖导出器构造失败分支。
+func TestExporterFailures(t *testing.T) {
+	origStdout := buildStdout
+	buildStdout = func(io.Writer) (sdktrace.SpanExporter, error) {
+		return nil, fmt.Errorf("stdout 构造失败")
+	}
+	if _, err := New(Config{ServiceName: "svc"}); !errx.Is(err, CodeExporterFailed) {
+		t.Fatalf("stdout 构造失败应报错，实际：%v", err)
+	}
+	buildStdout = origStdout
+
+	origOTLP := buildOTLP
+	buildOTLP = func(context.Context, ...otlptracehttp.Option) (sdktrace.SpanExporter, error) {
+		return nil, fmt.Errorf("otlp 构造失败")
+	}
+	if _, err := New(Config{ServiceName: "svc", Exporter: ExporterOTLPHTTP, OTLPEndpoint: "127.0.0.1:4318"}); !errx.Is(err, CodeExporterFailed) {
+		t.Fatalf("otlp 构造失败应报错，实际：%v", err)
+	}
+	buildOTLP = origOTLP
+}
+
+// TestNewOTLP 覆盖 OTLP/HTTP 选项分支。
+func TestNewOTLP(t *testing.T) {
+	m, err := New(Config{
+		ServiceName:  "svc",
+		Exporter:     ExporterOTLPHTTP,
+		OTLPEndpoint: "127.0.0.1:4318",
+		OTLPInsecure: true,
+		OTLPHeaders:  map[string]string{"Authorization": "Bearer x"},
+	})
+	if err != nil {
+		t.Fatalf("OTLP 构造失败：%v", err)
+	}
+	if err := m.Shutdown(context.Background()); err != nil {
+		t.Fatalf("OTLP 关闭失败：%v", err)
+	}
+}
+
+// TestShutdownFailure 覆盖关闭失败分支。
+func TestShutdownFailure(t *testing.T) {
+	m, err := New(Config{ServiceName: "svc", Exporter: ExporterMemory})
+	if err != nil {
+		t.Fatal(err)
+	}
+	orig := shutdownProvider
+	shutdownProvider = func(context.Context, *sdktrace.TracerProvider) error {
+		return fmt.Errorf("关闭失败")
+	}
+	err = m.Shutdown(context.Background())
+	shutdownProvider = orig
+	if !errx.Is(err, CodeShutdownFailed) {
+		t.Fatalf("关闭失败应报错，实际：%v", err)
+	}
+}
+
+// TestNewStdout 覆盖 stdout 导出器。
+func TestNewStdout(t *testing.T) {
+	var buf bytes.Buffer
+	m, err := New(Config{ServiceName: "svc", Writer: &buf})
+	if err != nil {
+		t.Fatalf("构造失败：%v", err)
+	}
+	if m.Tracer() == nil || m.Propagator() == nil {
+		t.Fatal("Tracer/Propagator 为空")
+	}
+	if m.Spans() != nil {
+		t.Fatal("stdout 导出器不应提供内存快照")
+	}
+	ctx, span := m.Start(context.Background(), "op")
+	span.End()
+	_ = ctx
+	if err := m.Shutdown(context.Background()); err != nil {
+		t.Fatalf("关闭失败：%v", err)
+	}
+	if buf.Len() == 0 {
+		t.Fatal("stdout 导出器应输出内容")
+	}
+	if err := m.Shutdown(context.Background()); err != nil {
+		t.Fatalf("重复关闭应幂等：%v", err)
+	}
+}
+
+// TestNewMemory 覆盖内存导出器与 Span 快照。
+func TestNewMemory(t *testing.T) {
+	m, err := New(Config{ServiceName: "svc", Exporter: ExporterMemory})
+	if err != nil {
+		t.Fatalf("构造失败：%v", err)
+	}
+	ctx, root := m.Start(context.Background(), "root",
+		trace.WithAttributes(attribute.String("service.name", "svc")))
+	_, child := m.Start(ctx, "child")
+	child.End()
+	root.End()
+	if err := m.Shutdown(context.Background()); err != nil {
+		t.Fatalf("关闭失败：%v", err)
+	}
+	spans := m.Spans()
+	if len(spans) != 2 {
+		t.Fatalf("应收集 2 条 Span，实际：%d", len(spans))
+	}
+	var rootSpan, childSpan SpanSnapshot
+	for _, s := range spans {
+		switch s.Name {
+		case "root":
+			rootSpan = s
+		case "child":
+			childSpan = s
+		}
+	}
+	if rootSpan.Name == "" || childSpan.Name == "" {
+		t.Fatalf("未找到父子 Span：%+v", spans)
+	}
+	if rootSpan.TraceID == "" || rootSpan.SpanID == "" || childSpan.ParentSpanID != rootSpan.SpanID {
+		t.Fatalf("父子关系不符：root=%+v child=%+v", rootSpan, childSpan)
+	}
+	if rootSpan.Attributes["service.name"] != "svc" {
+		t.Fatalf("属性不符：%+v", rootSpan.Attributes)
+	}
+	if rootSpan.StatusCode != "Unset" {
+		t.Fatalf("状态码不符：%s", rootSpan.StatusCode)
+	}
+	m.mem.Reset()
+	if len(m.Spans()) != 0 {
+		t.Fatal("Reset 后应无 Span")
+	}
+}
+
+// TestManagerMethods 覆盖配置副本、注入与提取。
+func TestManagerMethods(t *testing.T) {
+	cfg := Config{ServiceName: "svc", Version: "1.0.0", Environment: "test", Exporter: ExporterMemory}
+	m, err := New(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := m.Config(); got.ServiceName != "svc" || got.Version != "1.0.0" || got.Environment != "test" {
+		t.Fatalf("配置副本不符：%+v", got)
+	}
+	parentCtx, span := m.Start(context.Background(), "parent")
+	carrier := propagation.HeaderCarrier(http.Header{})
+	m.Inject(parentCtx, carrier)
+	extracted := m.Extract(context.Background(), carrier)
+	sc := trace.SpanContextFromContext(extracted)
+	if sc.TraceID() != trace.SpanContextFromContext(parentCtx).TraceID() {
+		t.Fatal("注入/提取链路 ID 不一致")
+	}
+	span.End()
+	_ = m.Shutdown(context.Background())
+}
+
+// TestMiddleware 覆盖状态码与错误标记。
+func TestMiddleware(t *testing.T) {
+	m, err := New(Config{ServiceName: "svc", Exporter: ExporterMemory})
+	if err != nil {
+		t.Fatal(err)
+	}
+	handler := m.Middleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte("ok"))
+	}))
+	req := httptest.NewRequest(http.MethodGet, "http://example.com/hello", nil)
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK || rec.Body.String() != "ok" {
+		t.Fatalf("响应不符：%d %q", rec.Code, rec.Body.String())
+	}
+
+	errHandler := m.Middleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	errRec := httptest.NewRecorder()
+	errHandler.ServeHTTP(errRec, httptest.NewRequest(http.MethodPost, "http://example.com/fail", nil))
+	if errRec.Code != http.StatusInternalServerError {
+		t.Fatalf("错误响应不符：%d", errRec.Code)
+	}
+	_ = m.Shutdown(context.Background())
+
+	spans := m.Spans()
+	if len(spans) != 2 {
+		t.Fatalf("应收集 2 条 Span，实际：%d", len(spans))
+	}
+	var okSpan, errSpan SpanSnapshot
+	for _, s := range spans {
+		switch s.Attributes["url.path"] {
+		case "/hello":
+			okSpan = s
+		case "/fail":
+			errSpan = s
+		}
+	}
+	if okSpan.Name == "" || errSpan.Name == "" {
+		t.Fatalf("未找到中间件 Span：%+v", spans)
+	}
+	if okSpan.Attributes["http.request.method"] != http.MethodGet ||
+		okSpan.Attributes["url.path"] != "/hello" ||
+		okSpan.Attributes["http.response.status_code"] != "200" {
+		t.Fatalf("OK Span 属性不符：%+v", okSpan.Attributes)
+	}
+	if errSpan.StatusCode != "Error" || errSpan.StatusMessage != "HTTP 500" {
+		t.Fatalf("错误 Span 状态不符：%+v", errSpan)
+	}
+}
+
+// TestMiddlewarePropagation 覆盖入站链路上下文透传。
+func TestMiddlewarePropagation(t *testing.T) {
+	m, err := New(Config{ServiceName: "svc", Exporter: ExporterMemory})
+	if err != nil {
+		t.Fatal(err)
+	}
+	parentCtx, parent := m.Start(context.Background(), "parent")
+	sc := trace.SpanContextFromContext(parentCtx)
+	header := http.Header{}
+	header.Set("traceparent", fmt.Sprintf("00-%s-%s-01", sc.TraceID(), sc.SpanID()))
+
+	handler := m.Middleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {}))
+	req := httptest.NewRequest(http.MethodGet, "http://example.com/child", nil)
+	req.Header = header
+	handler.ServeHTTP(httptest.NewRecorder(), req)
+	parent.End()
+	_ = m.Shutdown(context.Background())
+
+	for _, s := range m.Spans() {
+		if s.Name == "/child" {
+			if s.ParentSpanID != sc.SpanID().String() {
+				t.Fatalf("入站 Span 父 ID 不符：%s != %s", s.ParentSpanID, sc.SpanID())
+			}
+			return
+		}
+	}
+	t.Fatal("未找到入站 Span")
+}
+
+// TestLogFields 覆盖日志字段生成。
+func TestLogFields(t *testing.T) {
+	m, err := New(Config{ServiceName: "svc", Exporter: ExporterMemory})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, span := m.Start(context.Background(), "op")
+	sc := trace.SpanContextFromContext(ctx)
+	span.End()
+	_ = m.Shutdown(context.Background())
+
+	var buf bytes.Buffer
+	logger, err := logx.NewBuilder().EnableWriter(&buf, logx.InfoLevel).Build()
+	if err != nil {
+		t.Fatal(err)
+	}
+	logger.Info("带链路", LogFields(ctx))
+	if !strings.Contains(buf.String(), sc.TraceID().String()) {
+		t.Fatalf("日志应包含 trace_id：%s", buf.String())
+	}
+
+	buf.Reset()
+	logger.Info("无链路", LogFields(context.Background()))
+	if strings.Contains(buf.String(), "trace_id") {
+		t.Fatalf("无链路不应输出 trace_id：%s", buf.String())
+	}
+}
+
+// TestMemoryShutdown 覆盖导出器关闭后忽略导出。
+func TestMemoryShutdown(t *testing.T) {
+	m, err := New(Config{ServiceName: "svc", Exporter: ExporterMemory})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = m.mem.Shutdown(context.Background())
+	_, span := m.Start(context.Background(), "after-shutdown")
+	span.End()
+	_ = m.Shutdown(context.Background())
+	if len(m.Spans()) != 0 {
+		t.Fatal("关闭后不应再收集 Span")
+	}
+}
