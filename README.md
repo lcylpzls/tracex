@@ -3,7 +3,7 @@
 OpenTelemetry 链路追踪基座：统一 TracerProvider 管理、HTTP 中间件、
 logx 日志字段与内存导出器，与 errx / logx 家族生态打通。
 
-> 当前状态：**v0.9.0（webx 适配）**。
+> 当前状态：**v0.10.0（v1 候选）**。
 
 ## 特性
 
@@ -58,6 +58,7 @@ logger.Info("处理订单", tracex.LogFields(ctx)) // 自动带 trace_id/span_id
 - [API 定版](docs/api.md)
 - [版本路线](docs/roadmap.md)
 - [集成示例](examples/README.md)
+- [OTLP 采集部署](docs/otlp.md)
 
 ## License
 
