@@ -31,6 +31,7 @@ func (m *Manager) Start(ctx context.Context, name string, opts ...trace.SpanStar
 func (m *Manager) Inject(ctx context.Context, carrier propagation.TextMapCarrier)
 func (m *Manager) Extract(ctx context.Context, carrier propagation.TextMapCarrier) context.Context
 func (m *Manager) Middleware(next http.Handler) http.Handler
+func (m *Manager) RoundTripper(next http.RoundTripper) http.RoundTripper
 func (m *Manager) Spans() []SpanSnapshot   // 仅内存导出器
 func (m *Manager) Shutdown(ctx context.Context) error
 ```
@@ -41,7 +42,15 @@ func (m *Manager) Shutdown(ctx context.Context) error
 func LogFields(ctx context.Context) logx.FieldGroup
 ```
 
-## 4. 内存导出器
+## 4. Baggage 与事件
+
+```go
+func WithBaggage(ctx context.Context, key, value string) context.Context
+func BaggageValue(ctx context.Context, key string) string
+func AddSpanEvent(ctx context.Context, name string, attrs ...attribute.KeyValue)
+```
+
+## 5. 内存导出器
 
 ```go
 type SpanSnapshot struct {
@@ -52,6 +61,7 @@ type SpanSnapshot struct {
 	Attributes    map[string]string
 	StatusCode    string
 	StatusMessage string
+	Events        []SpanEvent
 }
 
 func NewMemoryExporter() *MemoryExporter
@@ -59,7 +69,7 @@ func (e *MemoryExporter) Spans() []SpanSnapshot
 func (e *MemoryExporter) Reset()
 ```
 
-## 5. 错误码
+## 6. 错误码
 
 `tracex_invalid_config` / `tracex_exporter_failed` /
 `tracex_shutdown_failed`（已注册 errx 分类，可用 `errx.Is` 匹配）。

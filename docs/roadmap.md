@@ -14,9 +14,11 @@
 
 ## v0.2.0 — 家族框架适配
 
-- webx 中间件适配（tracex/webx 子包）；
-- httpx 出站请求注入（span + traceparent 自动携带）；
-- Baggage 注入/读取便捷 API。
+- 出站 HTTP 注入（RoundTripper）；
+- Baggage 注入/读取便捷 API；
+- span 事件记录与快照。
+
+> 状态：**已发布**（v0.2.0，2026-08-10）。
 
 ## v0.3.0 — 可观测增强
 

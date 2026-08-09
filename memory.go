@@ -23,6 +23,16 @@ type SpanSnapshot struct {
 	StatusCode string
 	// StatusMessage 状态描述。
 	StatusMessage string
+	// Events 事件快照。
+	Events []SpanEvent
+}
+
+// SpanEvent Span 事件快照。
+type SpanEvent struct {
+	// Name 事件名。
+	Name string
+	// Attributes 事件属性。
+	Attributes map[string]string
 }
 
 // MemoryExporter 内存导出器：供测试与调试读取 Span。
@@ -54,9 +64,17 @@ func (e *MemoryExporter) ExportSpans(_ context.Context, spans []sdktrace.ReadOnl
 			Attributes:    make(map[string]string, len(s.Attributes())),
 			StatusCode:    s.Status().Code.String(),
 			StatusMessage: s.Status().Description,
+			Events:        make([]SpanEvent, 0, len(s.Events())),
 		}
 		for _, kv := range s.Attributes() {
 			snapshot.Attributes[string(kv.Key)] = kv.Value.String()
+		}
+		for _, ev := range s.Events() {
+			event := SpanEvent{Name: ev.Name, Attributes: make(map[string]string, len(ev.Attributes))}
+			for _, kv := range ev.Attributes {
+				event.Attributes[string(kv.Key)] = kv.Value.String()
+			}
+			snapshot.Events = append(snapshot.Events, event)
 		}
 		e.spans = append(e.spans, snapshot)
 	}
