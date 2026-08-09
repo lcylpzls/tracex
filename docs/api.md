@@ -16,8 +16,10 @@ type Config struct {
 	OTLPEndpoint string            // OTLP/HTTP 端点
 	OTLPInsecure bool              // 明文 HTTP
 	OTLPHeaders  map[string]string // 附加请求头
+	OTLPTimeout  time.Duration     // OTLP 请求超时（0=10s）
 	SlowThreshold time.Duration    // 慢请求阈值（0=关闭）
 	RouteNamer   func(*http.Request) string // 路由模板提取（可选）
+	Sampler      sdktrace.Sampler  // 采样器（nil=采样率）
 }
 ```
 

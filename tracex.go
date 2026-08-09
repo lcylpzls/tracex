@@ -67,11 +67,15 @@ type Config struct {
 	OTLPInsecure bool
 	// OTLPHeaders OTLP/HTTP 附加请求头。
 	OTLPHeaders map[string]string
+	// OTLPTimeout OTLP/HTTP 请求超时，0 使用默认 10s。
+	OTLPTimeout time.Duration
 	// SlowThreshold 慢请求阈值；超过时记录 slow 事件，0 关闭。
 	SlowThreshold time.Duration
 	// RouteNamer 可选：从请求中提取路由模板（如 /users/{id}）用于
 	// span 命名；返回空串时保持默认命名。
 	RouteNamer func(r *http.Request) string
+	// Sampler 可选采样器；nil 使用 TraceIDRatioBased(SampleRatio)。
+	Sampler sdktrace.Sampler
 }
 
 // Manager 追踪管理器：持有 TracerProvider、导出器与传播器。
@@ -113,10 +117,14 @@ func New(cfg Config) (*Manager, error) {
 	if cfg.Environment != "" {
 		attrs = append(attrs, attribute.String("deployment.environment", cfg.Environment))
 	}
+	sampler := cfg.Sampler
+	if sampler == nil {
+		sampler = sdktrace.TraceIDRatioBased(cfg.SampleRatio)
+	}
 	provider := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(exp, sdktrace.WithBatchTimeout(cfg.BatchTimeout)),
 		sdktrace.WithResource(sdkresource.NewSchemaless(attrs...)),
-		sdktrace.WithSampler(sdktrace.TraceIDRatioBased(cfg.SampleRatio)),
+		sdktrace.WithSampler(sampler),
 	)
 	propagator := propagation.NewCompositeTextMapPropagator(
 		propagation.TraceContext{},
@@ -160,6 +168,11 @@ func buildExporter(cfg Config) (sdktrace.SpanExporter, *MemoryExporter, error) {
 		if len(cfg.OTLPHeaders) > 0 {
 			opts = append(opts, otlptracehttp.WithHeaders(cfg.OTLPHeaders))
 		}
+		timeout := cfg.OTLPTimeout
+		if timeout <= 0 {
+			timeout = 10 * time.Second
+		}
+		opts = append(opts, otlptracehttp.WithTimeout(timeout))
 		exp, err := buildOTLP(context.Background(), opts...)
 		if err != nil {
 			return nil, nil, errx.WrapCode(err, CodeExporterFailed, "创建 OTLP/HTTP 导出器失败")

@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -68,12 +69,66 @@ func TestNewOTLP(t *testing.T) {
 		OTLPEndpoint: "127.0.0.1:4318",
 		OTLPInsecure: true,
 		OTLPHeaders:  map[string]string{"Authorization": "Bearer x"},
+		OTLPTimeout:  2 * time.Second,
 	})
 	if err != nil {
 		t.Fatalf("OTLP 构造失败：%v", err)
 	}
 	if err := m.Shutdown(context.Background()); err != nil {
 		t.Fatalf("OTLP 关闭失败：%v", err)
+	}
+}
+
+// TestSampler 覆盖可插拔采样器。
+func TestSampler(t *testing.T) {
+	m, err := New(Config{
+		ServiceName: "svc",
+		Exporter:    ExporterMemory,
+		Sampler:     sdktrace.NeverSample(),
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, span := m.Start(context.Background(), "never")
+	span.End()
+	_ = m.Shutdown(context.Background())
+	if len(m.Spans()) != 0 {
+		t.Fatal("NeverSample 不应导出任何 span")
+	}
+}
+
+// TestConcurrentRequests 覆盖并发安全（race 检测）。
+func TestConcurrentRequests(t *testing.T) {
+	m, err := New(Config{ServiceName: "svc", Exporter: ExporterMemory})
+	if err != nil {
+		t.Fatal(err)
+	}
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer srv.Close()
+
+	handler := m.Middleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	client := &http.Client{Transport: m.RoundTripper(http.DefaultTransport)}
+	const n = 32
+	var wg sync.WaitGroup
+	wg.Add(n)
+	for i := 0; i < n; i++ {
+		go func() {
+			defer wg.Done()
+			handler.ServeHTTP(httptest.NewRecorder(),
+				httptest.NewRequest(http.MethodGet, "http://example.com/in", nil))
+			if _, err := client.Get(srv.URL + "/out"); err != nil {
+				t.Errorf("出站请求失败：%v", err)
+			}
+		}()
+	}
+	wg.Wait()
+	_ = m.Shutdown(context.Background())
+	if got := len(m.Spans()); got != 2*n {
+		t.Fatalf("应导出 %d 条 span，实际：%d", 2*n, got)
 	}
 }
 
