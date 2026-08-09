@@ -34,12 +34,18 @@ jobs:
       - name: Test
         run: go test -count=1 ./...
 
+      - name: Test adapters
+        working-directory: adapters
+        run: go test -count=1 ./...
+
       - name: Test shuffled
         run: go test -shuffle=on -count=1 ./...
 
       - name: Race detector (Linux)
         if: runner.os == 'Linux'
-        run: go test -race -count=1 ./...
+        run: |
+          go test -race -count=1 ./...
+          cd adapters && go test -race -count=1 ./...
 
       - name: Coverage (Linux)
         if: runner.os == 'Linux'
@@ -90,6 +96,10 @@ jobs:
           check-latest: true
 
       - name: Test
+        run: go test -count=1 ./...
+
+      - name: Test adapters
+        working-directory: adapters
         run: go test -count=1 ./...
 
   govulncheck:

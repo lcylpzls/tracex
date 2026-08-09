@@ -63,6 +63,10 @@ jobs:
       - name: Run tests
         run: go test -v -race ./...
 
+      - name: Run adapters tests
+        working-directory: adapters
+        run: go test -v -race ./...
+
       - name: Cross-build
         run: |
           foreach ($pair in @(@('linux','amd64'), @('linux','arm64'), @('windows','amd64'), @('windows','arm64'), @('darwin','amd64'), @('darwin','arm64'))) {

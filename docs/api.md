@@ -82,3 +82,15 @@ func (e *MemoryExporter) Reset()
 
 `tracex_invalid_config` / `tracex_exporter_failed` /
 `tracex_shutdown_failed`（已注册 errx 分类，可用 `errx.Is` 匹配）。
+
+## 7. webx 适配（adapters 子模块）
+
+```go
+import wx "github.com/lcylpzls/webx"
+import txwebx "github.com/lcylpzls/tracex/adapters/webx"
+
+s.UseGlobalMiddleware(txwebx.Middleware(m)) // m 为 *tracex.Manager
+```
+
+行为与标准中间件一致：链路提取/创建、路由级命名、状态码、
+5xx 错误标记与慢请求事件。
