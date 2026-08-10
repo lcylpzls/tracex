@@ -3,18 +3,18 @@ module github.com/lcylpzls/tracex/adapters
 go 1.26.5
 
 require (
-	github.com/lcylpzls/authx v1.8.0
-	github.com/lcylpzls/cachex v1.3.0
-	github.com/lcylpzls/dbx v1.0.0
-	github.com/lcylpzls/filex v1.0.0
-	github.com/lcylpzls/jobx v1.5.0
-	github.com/lcylpzls/logx v1.3.0
-	github.com/lcylpzls/resiliencex v1.3.0
-	github.com/lcylpzls/testx v1.4.1
-	github.com/lcylpzls/tracex v1.0.0
-	github.com/lcylpzls/updatex v1.0.0
-	github.com/lcylpzls/webx v1.5.2
-	github.com/lcylpzls/winsvcx v1.0.0
+	github.com/lcylpzls/authx v1.8.1
+	github.com/lcylpzls/cachex v1.3.1
+	github.com/lcylpzls/dbx v1.0.1
+	github.com/lcylpzls/filex v1.0.1
+	github.com/lcylpzls/jobx v1.5.1
+	github.com/lcylpzls/logx v1.3.1
+	github.com/lcylpzls/resiliencex v1.3.1
+	github.com/lcylpzls/testx v1.4.2
+	github.com/lcylpzls/tracex v1.0.1
+	github.com/lcylpzls/updatex v1.0.1
+	github.com/lcylpzls/webx v1.5.3
+	github.com/lcylpzls/winsvcx v1.0.1
 	go.opentelemetry.io/otel v1.45.0
 	go.opentelemetry.io/otel/trace v1.45.0
 )
@@ -27,11 +27,11 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.29.0 // indirect
-	github.com/lcylpzls/confx v0.5.0 // indirect
-	github.com/lcylpzls/cryptox v0.6.7 // indirect
-	github.com/lcylpzls/errx v1.4.0 // indirect
-	github.com/lcylpzls/httpx v1.2.0 // indirect
-	github.com/lcylpzls/idgenx v1.3.0 // indirect
+	github.com/lcylpzls/confx v1.0.0 // indirect
+	github.com/lcylpzls/cryptox v1.0.0 // indirect
+	github.com/lcylpzls/errx v1.5.4 // indirect
+	github.com/lcylpzls/httpx v1.2.1 // indirect
+	github.com/lcylpzls/idgenx v1.4.0 // indirect
 	github.com/lcylpzls/validx v1.2.2 // indirect
 	github.com/magiconair/properties v1.18.11 // indirect
 	github.com/quic-go/qpack v0.6.0 // indirect
