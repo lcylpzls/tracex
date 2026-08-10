@@ -3,7 +3,7 @@ module github.com/lcylpzls/tracex/adapters
 go 1.26.5
 
 require (
-	github.com/lcylpzls/authx v1.0.4
+	github.com/lcylpzls/authx v1.5.0
 	github.com/lcylpzls/cachex v1.0.3
 	github.com/lcylpzls/dbx v0.2.4
 	github.com/lcylpzls/filex v0.20.0
