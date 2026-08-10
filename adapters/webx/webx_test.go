@@ -142,13 +142,15 @@ func TestMiddleware(t *testing.T) {
 	_ = s.Stop(context.Background())
 	_ = m.Shutdown(context.Background())
 
-	var okSpan, errSpan tracex.SpanSnapshot
+	var okSpan, errSpan, missingSpan tracex.SpanSnapshot
 	for _, sp := range m.Spans() {
 		switch sp.Name {
 		case "GET /hello":
 			okSpan = sp
 		case "GET /error":
 			errSpan = sp
+		case "/missing":
+			missingSpan = sp
 		}
 	}
 	if okSpan.Name == "" || okSpan.Attributes["http.response.status_code"] != "200" {
@@ -165,5 +167,8 @@ func TestMiddleware(t *testing.T) {
 	}
 	if errSpan.StatusCode != "Error" || errSpan.StatusMessage != "HTTP 500" {
 		t.Fatalf("5xx span 状态不符：%+v", errSpan)
+	}
+	if missingSpan.Name != "/missing" || missingSpan.Attributes["http.response.status_code"] != "404" {
+		t.Fatalf("404 span 应被全局中间件覆盖：%+v", missingSpan)
 	}
 }

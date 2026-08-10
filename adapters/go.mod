@@ -10,7 +10,7 @@ require (
 	github.com/lcylpzls/resiliencex v1.0.3
 	github.com/lcylpzls/tracex v0.8.0
 	github.com/lcylpzls/updatex v0.5.0
-	github.com/lcylpzls/webx v1.2.4
+	github.com/lcylpzls/webx v1.2.5
 	go.opentelemetry.io/otel v1.45.0
 	go.opentelemetry.io/otel/trace v1.45.0
 )

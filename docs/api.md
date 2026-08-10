@@ -93,7 +93,8 @@ s.UseGlobalMiddleware(txwebx.Middleware(m)) // m 为 *tracex.Manager
 ```
 
 行为与标准中间件一致：链路提取/创建、路由级命名、状态码、
-5xx 错误标记与慢请求事件。
+5xx 错误标记与慢请求事件；配合 webx ≥ v1.2.5 全局中间件覆盖
+404/405 兜底请求，追踪无盲区。
 
 ## 8. 家族插拔（adapters 子模块）
 
