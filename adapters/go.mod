@@ -6,6 +6,7 @@ require (
 	github.com/lcylpzls/authx v1.0.4
 	github.com/lcylpzls/cachex v1.0.3
 	github.com/lcylpzls/dbx v0.2.4
+	github.com/lcylpzls/filex v0.20.0
 	github.com/lcylpzls/jobx v1.0.4
 	github.com/lcylpzls/logx v1.0.1
 	github.com/lcylpzls/resiliencex v1.0.3

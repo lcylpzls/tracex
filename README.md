@@ -3,7 +3,7 @@
 OpenTelemetry 链路追踪基座：统一 TracerProvider 管理、HTTP 中间件、
 logx 日志字段与内存导出器，与 errx / logx 家族生态打通。
 
-> 当前状态：**v0.13.0（规范落地）**。
+> 当前状态：**v0.15.0（filex 接入）**。
 
 ## 特性
 

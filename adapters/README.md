@@ -65,6 +65,19 @@ u, _ := updatex.New(updatex.Config{
 
 Check / Apply 自动生成 updatex.* span。
 
+## filex（对象存储）
+
+```go
+import txfilex "github.com/lcylpzls/tracex/adapters/filex"
+
+s, _ := filex.New(filex.Config{
+	DataDir:   "./data",
+	TraceHook: txfilex.NewHook(m),
+})
+```
+
+Put / Get / Head / Delete / List / Copy / Move 自动生成 filex.* span。
+
 ## httpx（出站请求）
 
 ```go

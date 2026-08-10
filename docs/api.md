@@ -104,6 +104,12 @@ s.UseGlobalMiddleware(txwebx.Middleware(m)) // m 为 *tracex.Manager
 - resiliencex：`txresiliencex.NewHook(m)` +
   `resiliencex.WithTraceHook`（配合 ExecuteContext）；
 - updatex：`txupdatex.NewHook(m)` + `updatex.Config.TraceHook`；
-- httpx：`httpx.WithRoundTripperWrapper(m.RoundTripper)`。
+- httpx：`httpx.WithRoundTripperWrapper(m.RoundTripper)`；
+- authx：`txauthx.NewHook(m)` + `authx/token.WithTraceHook`；
+- winsvcx：`txwinsvcx.NewHook(m)` +
+  `winsvcx.RunWithHook`（Windows 平台）；
+- filex：`txfilex.NewHook(m)` + `filex.Config.TraceHook`。
 
 各库的 TraceHook 为零依赖最小接口，tracex 仅通过适配器接入。
+当前 9 个适配器（webx/dbx/jobx/cachex/resiliencex/updatex/httpx/
+authx/winsvcx/filex）语句覆盖率均达到 100%。

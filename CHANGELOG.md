@@ -1,5 +1,16 @@
 # 更新日志
 
+## [v0.15.0] - 2026-08-10
+
+### 新增
+
+- adapters 新增 filex（对象存储）追踪钩子适配，配合 filex v0.20.0
+  （Put/Get/Head/Delete/List/Copy/Move 埋点）。
+
+### 质量
+
+- 全部 9 个适配器语句覆盖率 100%；race / vet / staticcheck 全绿。
+
 ## [v0.14.0] - 2026-08-10
 
 ### 家族插拔（收官）

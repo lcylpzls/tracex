@@ -22,6 +22,7 @@
 | updatex | Config.TraceHook | tracex/adapters/updatex | v0.5.0+ |
 | authx | token.WithTraceHook | tracex/adapters/authx | v1.0.4+ |
 | winsvcx | service.RunWithHook | tracex/adapters/winsvcx | v0.13.0+ |
+| filex | Config.TraceHook | tracex/adapters/filex | v0.20.0+ |
 
 ## 不接入清单与理由
 
