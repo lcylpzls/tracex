@@ -20,7 +20,7 @@ import (
 
 	"github.com/lcylpzls/logx"
 	"github.com/lcylpzls/tracex"
-	wx "github.com/lcylpzls/webx"
+	wx "github.com/lcylpzls/webx/v2"
 )
 
 // testLogger 构造丢弃日志器。

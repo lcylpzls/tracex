@@ -1,5 +1,14 @@
 # 更新日志
 
+## [v0.16.0] - 2026-08-10
+
+### 变更
+
+- adapters 子模块升级依赖：webx → `webx/v2 v2.0.1`（v2 主版本
+  模块路径）、logx v1.1.0、errx v1.4.0；
+- adapters 子模块发布机制补齐：新增 `adapters/vX.Y.Z` tag 支持，
+  子模块可被 `go get github.com/lcylpzls/tracex/adapters` 消费。
+
 ## [v0.15.0] - 2026-08-10
 
 ### 新增
