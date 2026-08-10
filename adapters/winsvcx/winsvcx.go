@@ -1,3 +1,5 @@
+//go:build windows
+
 // Package winsvcx 提供 tracex 与 winsvcx 的链路追踪适配。
 package winsvcx
 
