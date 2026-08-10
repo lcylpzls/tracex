@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/lcylpzls/tracex"
-	wx "github.com/lcylpzls/webx/v2"
+	wx "github.com/lcylpzls/webx"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
