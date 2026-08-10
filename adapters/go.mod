@@ -5,16 +5,16 @@ go 1.26.5
 require (
 	github.com/lcylpzls/authx v1.8.0
 	github.com/lcylpzls/cachex v1.3.0
-	github.com/lcylpzls/dbx v0.6.0
-	github.com/lcylpzls/filex v0.28.0
+	github.com/lcylpzls/dbx v1.0.0
+	github.com/lcylpzls/filex v1.0.0
 	github.com/lcylpzls/jobx v1.5.0
-	github.com/lcylpzls/logx v1.2.5
-	github.com/lcylpzls/resiliencex v1.2.0
-	github.com/lcylpzls/testx v1.4.0
-	github.com/lcylpzls/tracex v0.17.1
-	github.com/lcylpzls/updatex v0.10.0
-	github.com/lcylpzls/webx v1.5.0
-	github.com/lcylpzls/winsvcx v0.15.0
+	github.com/lcylpzls/logx v1.3.0
+	github.com/lcylpzls/resiliencex v1.3.0
+	github.com/lcylpzls/testx v1.4.1
+	github.com/lcylpzls/tracex v1.0.0
+	github.com/lcylpzls/updatex v1.0.0
+	github.com/lcylpzls/webx v1.5.2
+	github.com/lcylpzls/winsvcx v1.0.0
 	go.opentelemetry.io/otel v1.45.0
 	go.opentelemetry.io/otel/trace v1.45.0
 )
