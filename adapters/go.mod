@@ -10,7 +10,7 @@ require (
 	github.com/lcylpzls/jobx v1.0.4
 	github.com/lcylpzls/logx v1.0.1
 	github.com/lcylpzls/resiliencex v1.0.3
-	github.com/lcylpzls/testx v1.2.0
+	github.com/lcylpzls/testx v1.2.1
 	github.com/lcylpzls/tracex v0.8.0
 	github.com/lcylpzls/updatex v0.5.0
 	github.com/lcylpzls/webx/v2 v2.0.1
