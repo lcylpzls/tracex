@@ -62,6 +62,7 @@ logger.Info("处理订单", tracex.LogFields(ctx)) // 自动带 trace_id/span_id
 - [版本路线](docs/roadmap.md)
 - [集成示例](examples/README.md)
 - [OTLP 采集部署](docs/otlp.md)
+- [家族可观测性规范](docs/observability.md)
 
 ## License
 

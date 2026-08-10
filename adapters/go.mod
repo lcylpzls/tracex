@@ -3,6 +3,7 @@ module github.com/lcylpzls/tracex/adapters
 go 1.26.5
 
 require (
+	github.com/lcylpzls/authx v1.0.4
 	github.com/lcylpzls/cachex v1.0.3
 	github.com/lcylpzls/dbx v0.2.4
 	github.com/lcylpzls/jobx v1.0.4
@@ -11,6 +12,7 @@ require (
 	github.com/lcylpzls/tracex v0.8.0
 	github.com/lcylpzls/updatex v0.5.0
 	github.com/lcylpzls/webx v1.2.5
+	github.com/lcylpzls/winsvcx v0.13.0
 	go.opentelemetry.io/otel v1.45.0
 	go.opentelemetry.io/otel/trace v1.45.0
 )

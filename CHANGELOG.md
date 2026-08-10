@@ -1,5 +1,21 @@
 # 更新日志
 
+## [v0.14.0] - 2026-08-10
+
+### 家族插拔（收官）
+
+- adapters 新增 authx（刷新令牌操作）与 winsvcx（服务生命周期）
+  追踪钩子适配；配合家族同步发版：
+  - authx v1.0.4：refresh issue/validate/consume/rotate 埋点；
+  - winsvcx v0.13.0：RunWithHook 服务会话埋点；
+  - webx v1.2.6：请求 ID 头名文档统一为 X-Request-ID；
+- 新增家族可观测性规范文档（接入矩阵 / 不接入清单与理由 /
+  全栈接入示例）。
+
+### 质量
+
+- 全部 8 个适配器语句覆盖率 100%；race / vet / staticcheck 全绿。
+
 ## [v0.13.0] - 2026-08-10
 
 ### 规范落地（方案 B）
