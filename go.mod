@@ -3,8 +3,9 @@ module github.com/lcylpzls/tracex
 go 1.26.5
 
 require (
-	github.com/lcylpzls/errx v1.3.2
+	github.com/lcylpzls/errx v1.4.0
 	github.com/lcylpzls/logx v1.0.1
+	github.com/lcylpzls/testx v1.2.0
 	go.opentelemetry.io/otel v1.45.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.45.0
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.45.0

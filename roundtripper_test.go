@@ -2,6 +2,7 @@ package tracex
 
 import (
 	"context"
+	testx "github.com/lcylpzls/testx"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -13,9 +14,8 @@ import (
 // TestRoundTripper 覆盖出站注入与状态标记。
 func TestRoundTripper(t *testing.T) {
 	m, err := New(Config{ServiceName: "svc", Exporter: ExporterMemory})
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	okSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -68,9 +68,8 @@ func TestRoundTripper(t *testing.T) {
 	if errSpan.StatusCode != "Error" || errSpan.Attributes["http.response.status_code"] != "502" {
 		t.Fatalf("5xx span 不符：%+v", errSpan)
 	}
-	if nilSpan.Name == "" {
-		t.Fatal("默认传输分支未记录 span")
-	}
+	testx.RequireNotEqual(t, nilSpan.Name, "")
+
 	if deadSpan.StatusCode != "Error" || len(deadSpan.Events) == 0 {
 		t.Fatalf("网络错误 span 不符：%+v", deadSpan)
 	}
@@ -79,9 +78,8 @@ func TestRoundTripper(t *testing.T) {
 // TestAddSpanEvent 覆盖 span 事件记录。
 func TestAddSpanEvent(t *testing.T) {
 	m, err := New(Config{ServiceName: "svc", Exporter: ExporterMemory})
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	ctx, span := m.Start(context.Background(), "op")
 	AddSpanEvent(ctx, "cache.hit", attribute.String("key", "x"))
 	AddSpanEvent(context.Background(), "ignored") // 无活动 span 应忽略

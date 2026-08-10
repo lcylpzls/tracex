@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	testx "github.com/lcylpzls/testx"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -72,9 +73,8 @@ func TestNewOTLP(t *testing.T) {
 		OTLPHeaders:  map[string]string{"Authorization": "Bearer x"},
 		OTLPTimeout:  2 * time.Second,
 	})
-	if err != nil {
-		t.Fatalf("OTLP 构造失败：%v", err)
-	}
+	testx.RequireNoError(t, err)
+
 	if err := m.Shutdown(context.Background()); err != nil {
 		t.Fatalf("OTLP 关闭失败：%v", err)
 	}
@@ -87,9 +87,8 @@ func TestSampler(t *testing.T) {
 		Exporter:    ExporterMemory,
 		Sampler:     sdktrace.NeverSample(),
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	_, span := m.Start(context.Background(), "never")
 	span.End()
 	_ = m.Shutdown(context.Background())
@@ -111,9 +110,8 @@ func TestSetGlobal(t *testing.T) {
 		Exporter:    ExporterMemory,
 		SetGlobal:   true,
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	if otel.GetTracerProvider() == prevProvider {
 		t.Fatal("全局 TracerProvider 未被替换")
 	}
@@ -130,9 +128,8 @@ func TestSetGlobal(t *testing.T) {
 // TestConcurrentRequests 覆盖并发安全（race 检测）。
 func TestConcurrentRequests(t *testing.T) {
 	m, err := New(Config{ServiceName: "svc", Exporter: ExporterMemory})
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 	}))
@@ -165,9 +162,8 @@ func TestConcurrentRequests(t *testing.T) {
 // TestShutdownFailure 覆盖关闭失败分支。
 func TestShutdownFailure(t *testing.T) {
 	m, err := New(Config{ServiceName: "svc", Exporter: ExporterMemory})
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	orig := shutdownProvider
 	shutdownProvider = func(context.Context, *sdktrace.TracerProvider) error {
 		return fmt.Errorf("关闭失败")
@@ -183,9 +179,8 @@ func TestShutdownFailure(t *testing.T) {
 func TestNewStdout(t *testing.T) {
 	var buf bytes.Buffer
 	m, err := New(Config{ServiceName: "svc", Writer: &buf})
-	if err != nil {
-		t.Fatalf("构造失败：%v", err)
-	}
+	testx.RequireNoError(t, err)
+
 	if m.Tracer() == nil || m.Propagator() == nil {
 		t.Fatal("Tracer/Propagator 为空")
 	}
@@ -209,9 +204,8 @@ func TestNewStdout(t *testing.T) {
 // TestNewMemory 覆盖内存导出器与 Span 快照。
 func TestNewMemory(t *testing.T) {
 	m, err := New(Config{ServiceName: "svc", Exporter: ExporterMemory})
-	if err != nil {
-		t.Fatalf("构造失败：%v", err)
-	}
+	testx.RequireNoError(t, err)
+
 	ctx, root := m.Start(context.Background(), "root",
 		trace.WithAttributes(attribute.String("service.name", "svc")))
 	_, child := m.Start(ctx, "child")
@@ -242,9 +236,8 @@ func TestNewMemory(t *testing.T) {
 	if rootSpan.Attributes["service.name"] != "svc" {
 		t.Fatalf("属性不符：%+v", rootSpan.Attributes)
 	}
-	if rootSpan.StatusCode != "Unset" {
-		t.Fatalf("状态码不符：%s", rootSpan.StatusCode)
-	}
+	testx.RequireEqual(t, rootSpan.StatusCode, "Unset")
+
 	m.mem.Reset()
 	if len(m.Spans()) != 0 {
 		t.Fatal("Reset 后应无 Span")
@@ -255,9 +248,8 @@ func TestNewMemory(t *testing.T) {
 func TestManagerMethods(t *testing.T) {
 	cfg := Config{ServiceName: "svc", Version: "1.0.0", Environment: "test", Exporter: ExporterMemory}
 	m, err := New(cfg)
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	if got := m.Config(); got.ServiceName != "svc" || got.Version != "1.0.0" || got.Environment != "test" {
 		t.Fatalf("配置副本不符：%+v", got)
 	}
@@ -276,9 +268,8 @@ func TestManagerMethods(t *testing.T) {
 // TestMiddleware 覆盖状态码与错误标记。
 func TestMiddleware(t *testing.T) {
 	m, err := New(Config{ServiceName: "svc", Exporter: ExporterMemory})
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	handler := m.Middleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write([]byte("ok"))
 	}))
@@ -294,9 +285,8 @@ func TestMiddleware(t *testing.T) {
 	}))
 	errRec := httptest.NewRecorder()
 	errHandler.ServeHTTP(errRec, httptest.NewRequest(http.MethodPost, "http://example.com/fail", nil))
-	if errRec.Code != http.StatusInternalServerError {
-		t.Fatalf("错误响应不符：%d", errRec.Code)
-	}
+	testx.RequireEqual(t, errRec.Code, http.StatusInternalServerError)
+
 	_ = m.Shutdown(context.Background())
 
 	spans := m.Spans()
@@ -334,9 +324,8 @@ func TestMiddlewareRouteNaming(t *testing.T) {
 			return "/users/{id}"
 		},
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	handler := m.Middleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusNoContent)
 	}))
@@ -350,9 +339,7 @@ func TestMiddlewareRouteNaming(t *testing.T) {
 			found = true
 		}
 	}
-	if !found {
-		t.Fatalf("未使用路由模板命名：%+v", m.Spans())
-	}
+	testx.RequireTrue(t, found)
 
 	// RouteNamer 返回空串时保持默认命名。
 	m2, err := New(Config{
@@ -360,9 +347,8 @@ func TestMiddlewareRouteNaming(t *testing.T) {
 		Exporter:    ExporterMemory,
 		RouteNamer:  func(*http.Request) string { return "" },
 	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	h2 := m2.Middleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {}))
 	h2.ServeHTTP(httptest.NewRecorder(),
 		httptest.NewRequest(http.MethodGet, "http://example.com/plain", nil))
@@ -378,9 +364,8 @@ func TestMiddlewareRouteNaming(t *testing.T) {
 // TestMiddlewareSlow 覆盖慢请求标记。
 func TestMiddlewareSlow(t *testing.T) {
 	m, err := New(Config{ServiceName: "svc", Exporter: ExporterMemory, SlowThreshold: time.Nanosecond})
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	handler := m.Middleware(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		time.Sleep(5 * time.Millisecond)
 		w.WriteHeader(http.StatusOK)
@@ -408,9 +393,8 @@ func TestMiddlewareSlow(t *testing.T) {
 // TestMiddlewarePropagation 覆盖入站链路上下文透传。
 func TestMiddlewarePropagation(t *testing.T) {
 	m, err := New(Config{ServiceName: "svc", Exporter: ExporterMemory})
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	parentCtx, parent := m.Start(context.Background(), "parent")
 	sc := trace.SpanContextFromContext(parentCtx)
 	header := http.Header{}
@@ -437,9 +421,8 @@ func TestMiddlewarePropagation(t *testing.T) {
 // TestLogFields 覆盖日志字段生成。
 func TestLogFields(t *testing.T) {
 	m, err := New(Config{ServiceName: "svc", Exporter: ExporterMemory})
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	ctx, span := m.Start(context.Background(), "op")
 	sc := trace.SpanContextFromContext(ctx)
 	span.End()
@@ -447,9 +430,8 @@ func TestLogFields(t *testing.T) {
 
 	var buf bytes.Buffer
 	logger, err := logx.NewBuilder().EnableWriter(&buf, logx.InfoLevel).Build()
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	logger.Info("带链路", LogFields(ctx))
 	if !strings.Contains(buf.String(), sc.TraceID().String()) {
 		t.Fatalf("日志应包含 trace_id：%s", buf.String())
@@ -465,9 +447,8 @@ func TestLogFields(t *testing.T) {
 // TestMemoryShutdown 覆盖导出器关闭后忽略导出。
 func TestMemoryShutdown(t *testing.T) {
 	m, err := New(Config{ServiceName: "svc", Exporter: ExporterMemory})
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	_ = m.mem.Shutdown(context.Background())
 	_, span := m.Start(context.Background(), "after-shutdown")
 	span.End()

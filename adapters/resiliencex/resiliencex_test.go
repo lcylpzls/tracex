@@ -3,6 +3,7 @@ package resiliencex
 import (
 	"context"
 	"errors"
+	testx "github.com/lcylpzls/testx"
 	"testing"
 
 	"github.com/lcylpzls/resiliencex"
@@ -12,9 +13,8 @@ import (
 // TestHook 覆盖 resiliencex 追踪钩子成功与失败路径。
 func TestHook(t *testing.T) {
 	m, err := tracex.New(tracex.Config{ServiceName: "svc", Exporter: tracex.ExporterMemory})
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	h := NewHook(m)
 	ctx, end := h.Start(context.Background(), "resiliencex.circuit_breaker",
 		resiliencex.TraceAttr{Key: "resiliencex.state", Value: "closed"})

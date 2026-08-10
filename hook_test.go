@@ -3,6 +3,7 @@ package tracex
 import (
 	"context"
 	"errors"
+	testx "github.com/lcylpzls/testx"
 	"io"
 	"testing"
 	"time"
@@ -13,9 +14,8 @@ import (
 // TestRecordError 覆盖错误记录分支。
 func TestRecordError(t *testing.T) {
 	m, err := New(Config{ServiceName: "svc", Exporter: ExporterMemory})
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	ctx, span := m.Start(context.Background(), "op")
 	RecordError(ctx, errors.New("boom"))
 	RecordError(ctx, nil) // nil 忽略
@@ -27,34 +27,29 @@ func TestRecordError(t *testing.T) {
 		t.Fatalf("应收集 1 条 span：%+v", spans)
 	}
 	s := spans[0]
-	if s.StatusCode != "Error" {
-		t.Fatalf("状态码应为 Error：%s", s.StatusCode)
-	}
+	testx.RequireEqual(t, s.StatusCode, "Error")
+
 	found := false
 	for _, ev := range s.Events {
 		if ev.Name == "exception" {
 			found = true
 		}
 	}
-	if !found {
-		t.Fatalf("应记录异常事件：%+v", s.Events)
-	}
+	testx.RequireTrue(t, found)
+
 }
 
 // TestLogHook 覆盖日志写入 span 事件。
 func TestLogHook(t *testing.T) {
 	m, err := New(Config{ServiceName: "svc", Exporter: ExporterMemory})
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	logger, err := logx.NewBuilder().EnableWriter(io.Discard, logx.InfoLevel).Build()
-	if err != nil {
-		t.Fatal(err)
-	}
+	testx.RequireNoError(t, err)
+
 	hl, ok := logger.(logx.HookedLogger)
-	if !ok {
-		t.Fatal("logger 应支持 Hook")
-	}
+	testx.RequireTrue(t, ok)
+
 	hl.AddHook(NewLogHook())
 
 	ctx, span := m.Start(context.Background(), "op")
