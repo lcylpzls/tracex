@@ -1,5 +1,19 @@
 # 更新日志
 
+## [v1.1.0] - 2026-08-11
+
+### 重构
+
+- 实现主体下沉 `internal/core`，根包仅保留公开 API（类型别名 + 转发）；
+- 白盒测试迁入 `internal/core`，根包新增黑盒冒烟测试，两处覆盖率均 100%。
+
+### 破坏性变更
+
+- 删除 `adapters/*` 全部子包（authx/cachex/dbx/filex/jobx/resiliencex/updatex/webx/winsvcx），消除 tracex↔webx 等模块级循环依赖；
+- 新增标准 `NewHook(m *Manager) TraceHook`：任意库通过 `WithTraceHook(tracex.NewHook(m))` 插拔接入，无需适配子包；
+- webx HTTP trace 中间件将在 webx 重构批次中回归至 webx 库自身。
+
+
 ## [v1.0.4] - 2026-08-10
 
 ### 新增
