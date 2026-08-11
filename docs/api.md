@@ -1,26 +1,26 @@
 # tracex API 定版
 
-> 版本：v0.1.0
+> 当前版本：v1.1.1。公开 API 以 `go doc` 与 README 为准。
 
 ## 1. Config
 
 ```go
 type Config struct {
-	ServiceName  string            // 服务名（必填）
-	Version      string            // 服务版本
-	Environment  string            // 部署环境
-	SampleRatio  float64           // 采样率 0~1，0=默认 1
-	BatchTimeout time.Duration     // 批量导出间隔，0=默认 5s
-	Exporter     ExporterKind      // memory/stdout/otlp-http，空=stdout
-	Writer       io.Writer         // stdout 输出目标
-	OTLPEndpoint string            // OTLP/HTTP 端点
-	OTLPInsecure bool              // 明文 HTTP
-	OTLPHeaders  map[string]string // 附加请求头
-	OTLPTimeout  time.Duration     // OTLP 请求超时（0=10s）
-	SlowThreshold time.Duration    // 慢请求阈值（0=关闭）
-	RouteNamer   func(*http.Request) string // 路由模板提取（可选）
-	Sampler      sdktrace.Sampler  // 采样器（nil=采样率）
-	SetGlobal    bool              // 注册为 OTel 全局组件
+	ServiceName   string            // 服务名（必填）
+	Version       string            // 服务版本
+	Environment   string            // 部署环境
+	SampleRatio   float64           // 采样率 0~1，0=默认 1
+	BatchTimeout  time.Duration     // 批量导出间隔，0=默认 5s
+	Exporter      ExporterKind      // memory/stdout/otlp-http，空=stdout
+	Writer        io.Writer         // stdout 输出目标
+	OTLPEndpoint  string            // OTLP/HTTP 端点
+	OTLPInsecure  bool              // 明文 HTTP
+	OTLPHeaders   map[string]string // 附加请求头
+	OTLPTimeout   time.Duration     // OTLP 请求超时（0=10s）
+	SlowThreshold time.Duration     // 慢请求阈值（0=关闭）
+	RouteNamer    func(*http.Request) string // 路由模板提取（可选）
+	Sampler       sdktrace.Sampler  // 采样器（nil=按采样率）
+	SetGlobal     bool              // 注册为 OTel 全局组件
 }
 ```
 
@@ -41,13 +41,53 @@ func (m *Manager) Spans() []SpanSnapshot   // 仅内存导出器
 func (m *Manager) Shutdown(ctx context.Context) error
 ```
 
-## 3. 日志联动
+## 3. 标准中间件（webx / net/http）
+
+`Manager.Middleware` 返回标准 `func(http.Handler) http.Handler`，
+可直接用于 webx 全局中间件或任意 `net/http` 服务：
+
+```go
+// webx：全局中间件覆盖 404/405 兜底请求，追踪无盲区
+s.UseGlobalMiddleware(m.Middleware)
+
+// 原生 net/http
+http.ListenAndServe(":8080", m.Middleware(mux))
+```
+
+行为：链路提取/创建、URL 路由命名（可配 `RouteNamer`）、状态码记录、
+5xx 错误标记与慢请求事件。
+
+## 4. 家族插拔（标准 TraceHook）
+
+`tracex.NewHook(m)` 返回家族统一的 `TraceHook`，各基座通过自身的
+钩子选项直接接入，不需要任何适配子包：
+
+```go
+hook := tracex.NewHook(m)
+
+dbx.Open(ctx, "mysql", dsn, dbx.WithTraceHook(hook))
+jobx.NewDispatcher(jobx.WithTraceHook(hook))
+cachex.New(cachex.WithTraceHook(hook))
+resiliencex.NewCircuitBreaker(resiliencex.WithTraceHook(hook))
+updatex.New(updatex.Config{TraceHook: hook, ...})
+token.IssueRefreshToken(ctx, store, ttl, token.WithTraceHook(hook))
+service.RunWithHook(name, hook) // winsvcx（Windows 平台）
+filex.New(filex.Config{TraceHook: hook, ...})
+```
+
+httpx 出站通过传输层包装：
+
+```go
+client, _ := httpx.New(httpx.WithRoundTripperWrapper(m.RoundTripper))
+```
+
+## 5. 日志联动
 
 ```go
 func LogFields(ctx context.Context) logx.FieldGroup
 ```
 
-## 4. Baggage 与事件
+## 6. Baggage 与事件
 
 ```go
 func WithBaggage(ctx context.Context, key, value string) context.Context
@@ -59,7 +99,7 @@ type LogHook struct{}
 func NewLogHook() *LogHook // 注册到 logx.HookedLogger.AddHook
 ```
 
-## 5. 内存导出器
+## 7. 内存导出器
 
 ```go
 type SpanSnapshot struct {
@@ -78,38 +118,7 @@ func (e *MemoryExporter) Spans() []SpanSnapshot
 func (e *MemoryExporter) Reset()
 ```
 
-## 6. 错误码
+## 8. 错误码
 
 `tracex_invalid_config` / `tracex_exporter_failed` /
 `tracex_shutdown_failed`（已注册 errx 分类，可用 `errx.Is` 匹配）。
-
-## 7. webx 适配（adapters 子模块）
-
-```go
-import wx "github.com/lcylpzls/webx"
-import txwebx "github.com/lcylpzls/tracex/adapters/webx"
-
-s.UseGlobalMiddleware(txwebx.Middleware(m)) // m 为 *tracex.Manager
-```
-
-行为与标准中间件一致：链路提取/创建、路由级命名、状态码、
-5xx 错误标记与慢请求事件；配合 webx ≥ v1.2.5 全局中间件覆盖
-404/405 兜底请求，追踪无盲区。
-
-## 8. 家族插拔（adapters 子模块）
-
-- dbx：`txdbx.NewHook(m)` + `dbx.WithTraceHook`；
-- jobx：`txjobx.NewHook(m)` + `jobx.WithTraceHook`；
-- cachex：`txcachex.NewHook(m)` + `cachex.WithTraceHook`；
-- resiliencex：`txresiliencex.NewHook(m)` +
-  `resiliencex.WithTraceHook`（配合 ExecuteContext）；
-- updatex：`txupdatex.NewHook(m)` + `updatex.Config.TraceHook`；
-- httpx：`httpx.WithRoundTripperWrapper(m.RoundTripper)`；
-- authx：`txauthx.NewHook(m)` + `authx/token.WithTraceHook`；
-- winsvcx：`txwinsvcx.NewHook(m)` +
-  `winsvcx.RunWithHook`（Windows 平台）；
-- filex：`txfilex.NewHook(m)` + `filex.Config.TraceHook`。
-
-各库的 TraceHook 为零依赖最小接口，tracex 仅通过适配器接入。
-当前 9 个适配器（webx/dbx/jobx/cachex/resiliencex/updatex/httpx/
-authx/winsvcx/filex）语句覆盖率均达到 100%。

@@ -5,24 +5,25 @@
 1. **唯一追踪基座**：分布式追踪只由 tracex 实现（OTel），其余
    基座禁止直接依赖 OTel；
 2. **零依赖插拔**：需要追踪的基座只暴露最小 `TraceHook` 接口
-   （默认 no-op）或传输包装点，由 tracex/adapters 统一接入；
+   （默认 no-op）或传输包装点，由调用方用
+   `tracex.NewHook(m)` 统一接入；
 3. **无内置追踪**：任何基座不内置 span 逻辑；`X-Request-ID`
    一类请求 ID 属于请求标识，与链路追踪无关。
 
 ## 接入矩阵
 
-| 基座 | 接入点 | 适配器 | 版本 |
-| --- | --- | --- | --- |
-| webx | 全局中间件 | tracex/adapters/webx | v1.2.5+ |
-| httpx | WithRoundTripperWrapper | m.RoundTripper | v1.0.4+ |
-| dbx | WithTraceHook | tracex/adapters/dbx | v0.2.4+ |
-| jobx | WithTraceHook | tracex/adapters/jobx | v1.0.4+ |
-| cachex | WithTraceHook | tracex/adapters/cachex | v1.0.3+ |
-| resiliencex | WithTraceHook + ExecuteContext | tracex/adapters/resiliencex | v1.0.3+ |
-| updatex | Config.TraceHook | tracex/adapters/updatex | v0.5.0+ |
-| authx | token.WithTraceHook | tracex/adapters/authx | v1.0.4+ |
-| winsvcx | service.RunWithHook | tracex/adapters/winsvcx | v0.13.0+ |
-| filex | Config.TraceHook | tracex/adapters/filex | v0.20.0+ |
+| 基座 | 接入点 | 接入方式 |
+| --- | --- | --- |
+| webx | 全局中间件 | `s.UseGlobalMiddleware(m.Middleware)` |
+| httpx | WithRoundTripperWrapper | `m.RoundTripper` |
+| dbx | WithTraceHook | `tracex.NewHook(m)` |
+| jobx | WithTraceHook | `tracex.NewHook(m)` |
+| cachex | WithTraceHook | `tracex.NewHook(m)` |
+| resiliencex | WithTraceHook | `tracex.NewHook(m)` |
+| updatex | Config.TraceHook | `tracex.NewHook(m)` |
+| authx | token.WithTraceHook | `tracex.NewHook(m)` |
+| winsvcx | service.RunWithHook | `tracex.NewHook(m)` |
+| filex | Config.TraceHook | `tracex.NewHook(m)` |
 
 ## 不接入清单与理由
 
@@ -38,18 +39,24 @@
 ## 接入示例（全栈链路）
 
 ```go
-m, _ := tracex.New(tracex.Config{ServiceName: "order", Exporter: tracex.ExporterOTLPHTTP, ...})
+m, _ := tracex.New(tracex.Config{
+	ServiceName: "order",
+	Exporter:    tracex.ExporterOTLPHTTP,
+	// ...
+})
+hook := tracex.NewHook(m)
 
-// webx 入站
-s.UseGlobalMiddleware(txwebx.Middleware(m))
+// webx 入站（标准中间件）
+s.UseGlobalMiddleware(m.Middleware)
 // httpx 出站
 client, _ := httpx.New(httpx.WithRoundTripperWrapper(m.RoundTripper))
-// dbx / jobx / cachex / resiliencex / updatex / authx / winsvcx
-dbx.Open(ctx, "mysql", dsn, dbx.WithTraceHook(txdbx.NewHook(m)))
-jobx.NewDispatcher(jobx.WithTraceHook(txjobx.NewHook(m)))
-cachex.New(cachex.WithTraceHook(txcachex.NewHook(m)))
-resiliencex.NewCircuitBreaker(resiliencex.WithTraceHook(txresiliencex.NewHook(m)))
-updatex.New(updatex.Config{TraceHook: txupdatex.NewHook(m), ...})
-token.IssueRefreshToken(ctx, store, ttl, token.WithTraceHook(txauthx.NewHook(m)))
-service.RunWithHook(name, txwinsvcx.NewHook(m))
+// dbx / jobx / cachex / resiliencex / updatex / authx / winsvcx / filex
+dbx.Open(ctx, "mysql", dsn, dbx.WithTraceHook(hook))
+jobx.NewDispatcher(jobx.WithTraceHook(hook))
+cachex.New(cachex.WithTraceHook(hook))
+resiliencex.NewCircuitBreaker(resiliencex.WithTraceHook(hook))
+updatex.New(updatex.Config{TraceHook: hook})
+token.IssueRefreshToken(ctx, store, ttl, token.WithTraceHook(hook))
+service.RunWithHook(name, hook) // winsvcx（Windows 平台）
+filex.New(filex.Config{TraceHook: hook})
 ```
