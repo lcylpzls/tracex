@@ -1,5 +1,18 @@
 # 更新日志
 
+## [v1.2.0] - 2026-08-11
+
+### 破坏性变更
+
+- 错误码统一为大写风格：`TRACEX_INVALID_CONFIG` /
+  `TRACEX_EXPORTER_FAILED` / `TRACEX_SHUTDOWN_FAILED`
+  （替代小写 `tracex_*`，与 CACHEX_INVALID_CONFIG 等家族风格一致）；
+- 常量名不变，仅错误码字符串变更；下游如需匹配旧字符串需同步更新。
+
+### 新增
+
+- 新增公开 `Version` 常量，与 git tag 保持一致。
+
 ## [v1.1.1] - 2026-08-11
 
 ### 文档

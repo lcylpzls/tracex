@@ -1,6 +1,6 @@
 # tracex API 定版
 
-> 当前版本：v1.1.1。公开 API 以 `go doc` 与 README 为准。
+> 当前版本：v1.2.0。公开 API 以 `go doc` 与 README 为准。
 
 ## 1. Config
 
@@ -120,5 +120,5 @@ func (e *MemoryExporter) Reset()
 
 ## 8. 错误码
 
-`tracex_invalid_config` / `tracex_exporter_failed` /
-`tracex_shutdown_failed`（已注册 errx 分类，可用 `errx.Is` 匹配）。
+`TRACEX_INVALID_CONFIG` / `TRACEX_EXPORTER_FAILED` /
+`TRACEX_SHUTDOWN_FAILED`（已注册 errx 分类，可用 `errx.Is` 匹配）。
