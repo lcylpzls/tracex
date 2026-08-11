@@ -1,5 +1,20 @@
 # 更新日志
 
+## [v1.3.0] - 2026-08-11
+
+### 破坏性变更
+
+- `TraceHook` / `TraceAttr` 契约迁至零依赖子模块
+  `github.com/lcylpzls/tracex/contract`（v1.0.0）；
+- 家族库不再依赖 tracex 主模块即可使用追踪钩子契约，
+  tracex 仅作为 OpenTelemetry 实现被按需引入；
+- 公开类型名不变，导入路径变化：引用契约请改导入
+  `tracex/contract`。
+
+### 依赖
+
+- 新增 `tracex/contract v1.0.0`。
+
 ## [v1.2.0] - 2026-08-11
 
 ### 破坏性变更

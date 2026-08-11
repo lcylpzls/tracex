@@ -6,6 +6,7 @@ require (
 	github.com/lcylpzls/errx v1.5.7
 	github.com/lcylpzls/logx v1.3.4
 	github.com/lcylpzls/testx v1.4.4
+	github.com/lcylpzls/tracex/contract v1.0.0
 	go.opentelemetry.io/otel v1.45.0
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.45.0
 	go.opentelemetry.io/otel/exporters/stdout/stdouttrace v1.45.0

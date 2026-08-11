@@ -1,6 +1,6 @@
 # tracex API 定版
 
-> 当前版本：v1.2.0。公开 API 以 `go doc` 与 README 为准。
+> 当前版本：v1.3.0。公开 API 以 `go doc` 与 README 为准。
 
 ## 1. Config
 

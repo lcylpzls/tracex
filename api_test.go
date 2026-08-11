@@ -10,7 +10,7 @@ import (
 
 // TestPublicAPI 黑盒冒烟测试：覆盖根包全部转发函数、类型别名与常量。
 func TestPublicAPI(t *testing.T) {
-	if tracex.Version != "v1.2.0" {
+	if tracex.Version != "v1.3.0" {
 		t.Fatalf("Version 不符：%s", tracex.Version)
 	}
 
